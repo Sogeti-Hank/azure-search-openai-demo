@@ -1,3 +1,16 @@
+"""
+chatreadretrievereadvision.py
+
+This module implements the ChatReadRetrieveReadVisionApproach, an advanced multi-step retrieval-augmented generation (RAG) approach for chat-based applications that require both text and image understanding. The workflow is as follows:
+- Uses OpenAI to rewrite the user's question into an optimized search query (optionally using a prompt and tools).
+- Executes a search against Azure Cognitive Search (using text, vector, or hybrid retrieval, with optional semantic ranker/captions), supporting both text and image embeddings.
+- Optionally fetches image URLs from Azure Blob Storage for use in vision models.
+- Collects and structures the retrieved data and reasoning steps (thoughts) for transparency and debugging.
+- Sends the conversation history, user query, search results, and images to OpenAI (e.g., GPT-4V) to generate a final response, supporting both streaming and non-streaming modes.
+
+This approach is designed for advanced chatbots and assistants that require accurate, context-aware answers grounded in enterprise data, leveraging both text and image content.
+"""
+
 from collections.abc import Awaitable
 from typing import Any, Callable, Optional, Union, cast
 
@@ -22,7 +35,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
     """
     A multi-step approach that first uses OpenAI to turn the user's question into a search query,
     then uses Azure AI Search to retrieve relevant documents, and then sends the conversation history,
-    original user question, and search results to OpenAI to generate a response.
+    original user question, and search results (including images) to OpenAI to generate a response.
     """
 
     def __init__(
@@ -48,6 +61,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         vision_token_provider: Callable[[], Awaitable[str]],
         prompt_manager: PromptManager,
     ):
+        # Store all configuration and service clients for use in the approach
         self.search_client = search_client
         self.blob_container_client = blob_container_client
         self.openai_client = openai_client
@@ -67,10 +81,11 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         self.vision_endpoint = vision_endpoint
         self.vision_token_provider = vision_token_provider
         self.prompt_manager = prompt_manager
+        # Load prompts and tools for query rewriting and answer generation
         self.query_rewrite_prompt = self.prompt_manager.load_prompt("chat_query_rewrite.prompty")
         self.query_rewrite_tools = self.prompt_manager.load_tools("chat_query_rewrite_tools.json")
         self.answer_prompt = self.prompt_manager.load_prompt("chat_answer_question_vision.prompty")
-        # Currently disabled due to issues with rendering token usage in the UI
+        # Token usage tracking is currently disabled for vision models
         self.include_token_usage = False
 
     async def run_until_final_call(
@@ -80,6 +95,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         auth_claims: dict[str, Any],
         should_stream: bool = False,
     ) -> tuple[ExtraInfo, Union[Awaitable[ChatCompletion], Awaitable[AsyncStream[ChatCompletionChunk]]]]:
+        # Extract configuration and override parameters
         seed = overrides.get("seed", None)
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
@@ -99,7 +115,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
         if not isinstance(original_user_query, str):
             raise ValueError("The most recent message content must be a string.")
 
-        # Use prompty to prepare the query prompt
+        # Render the prompt for query rewriting (if enabled)
         query_messages = self.prompt_manager.render_prompt(
             self.query_rewrite_prompt, {"user_query": original_user_query, "past_messages": messages[:-1]}
         )
@@ -117,13 +133,13 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
             seed=seed,
         )
 
+        # Extract the search query from the LLM response
         query_text = self.get_search_query(chat_completion, original_user_query)
 
         # STEP 2: Retrieve relevant documents from the search index with the GPT optimized query
-
-        # If retrieval mode includes vectors, compute an embedding for the query
         vectors = []
         if use_vector_search:
+            # Compute vector embedding for the query if vector search is enabled
             if vector_fields == "textEmbeddingOnly" or vector_fields == "textAndImageEmbeddings":
                 vectors.append(await self.compute_text_embedding(query_text))
             if vector_fields == "imageEmbeddingOnly" or vector_fields == "textAndImageEmbeddings":
@@ -143,17 +159,20 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
             use_query_rewriting,
         )
 
-        # STEP 3: Generate a contextual and content specific answer using the search results and chat history
+        # STEP 3: Prepare text and image sources for the answer prompt
         text_sources = []
         image_sources = []
         if send_text_to_gptvision:
+            # Collect text sources for the vision model
             text_sources = self.get_sources_content(results, use_semantic_captions, use_image_citation=True)
         if send_images_to_gptvision:
+            # Fetch image URLs from blob storage for each result
             for result in results:
                 url = await fetch_image(self.blob_container_client, result)
                 if url:
                     image_sources.append(url)
 
+        # Render the final answer prompt with all context and sources
         messages = self.prompt_manager.render_prompt(
             self.answer_prompt,
             self.get_system_prompt_variables(overrides.get("prompt_template"))
@@ -166,6 +185,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
             },
         )
 
+        # Build the ExtraInfo object with all reasoning steps (thoughts) and supporting data
         extra_info = ExtraInfo(
             DataPoints(text=text_sources, images=image_sources),
             [
@@ -207,6 +227,7 @@ class ChatReadRetrieveReadVisionApproach(ChatApproach):
             ],
         )
 
+        # Create the coroutine for the final chat completion (streaming or not)
         chat_coroutine = cast(
             Union[Awaitable[ChatCompletion], Awaitable[AsyncStream[ChatCompletionChunk]]],
             self.openai_client.chat.completions.create(

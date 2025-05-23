@@ -1,3 +1,16 @@
+"""
+retrievethenread.py
+
+This module implements the RetrieveThenReadApproach, a simple retrieval-augmented generation (RAG) approach for answering user queries using Azure Cognitive Search and OpenAI. The workflow is as follows:
+- Receives a user query and determines whether to use standard or agentic retrieval (multi-step, subqueries, etc.).
+- If standard retrieval: performs a search (text, vector, or hybrid) using the query, collects top documents, and prepares them as context.
+- If agentic retrieval: uses Azure's KnowledgeAgentRetrievalClient for more advanced, multi-step search strategies.
+- Constructs a prompt with the user query and retrieved context, then sends it to OpenAI to generate a final answer.
+- Tracks and returns reasoning steps (thoughts) and supporting data for transparency and debugging.
+
+This approach is suitable for scenarios where a single search step is sufficient, but can also leverage agentic retrieval for more complex needs.
+"""
+
 from typing import Any, Optional, cast
 
 from azure.search.documents.agent.aio import KnowledgeAgentRetrievalClient
@@ -14,7 +27,7 @@ from core.authentication import AuthenticationHelper
 class RetrieveThenReadApproach(Approach):
     """
     Simple retrieve-then-read implementation, using the AI Search and OpenAI APIs directly. It first retrieves
-    top documents from search, then constructs a prompt with them, and then uses OpenAI to generate an completion
+    top documents from search, then constructs a prompt with them, and then uses OpenAI to generate a completion
     (answer) with that prompt.
     """
 
@@ -41,6 +54,7 @@ class RetrieveThenReadApproach(Approach):
         prompt_manager: PromptManager,
         reasoning_effort: Optional[str] = None,
     ):
+        # Store all configuration and service clients for use in the approach
         self.search_client = search_client
         self.search_index_name = search_index_name
         self.agent_model = agent_model
@@ -70,6 +84,7 @@ class RetrieveThenReadApproach(Approach):
         session_state: Any = None,
         context: dict[str, Any] = {},
     ) -> dict[str, Any]:
+        # Extract overrides and authentication claims from context
         overrides = context.get("overrides", {})
         auth_claims = context.get("auth_claims", {})
         use_agentic_retrieval = True if overrides.get("use_agentic_retrieval") else False
@@ -77,18 +92,20 @@ class RetrieveThenReadApproach(Approach):
         if not isinstance(q, str):
             raise ValueError("The most recent message content must be a string.")
 
+        # Choose retrieval strategy: agentic or standard
         if use_agentic_retrieval:
             extra_info = await self.run_agentic_retrieval_approach(messages, overrides, auth_claims)
         else:
             extra_info = await self.run_search_approach(messages, overrides, auth_claims)
 
-        # Process results
+        # Prepare the answer prompt with the user query and retrieved context
         messages = self.prompt_manager.render_prompt(
             self.answer_prompt,
             self.get_system_prompt_variables(overrides.get("prompt_template"))
             | {"user_query": q, "text_sources": extra_info.data_points.text},
         )
 
+        # Call OpenAI to generate the answer
         chat_completion = cast(
             ChatCompletion,
             await self.create_chat_completion(
@@ -99,6 +116,7 @@ class RetrieveThenReadApproach(Approach):
                 response_token_limit=self.get_response_token_limit(self.chatgpt_model, 1024),
             ),
         )
+        # Track the answer generation step in thoughts
         extra_info.thoughts.append(
             self.format_thought_step_for_chatcompletion(
                 title="Prompt to generate answer",
@@ -109,6 +127,7 @@ class RetrieveThenReadApproach(Approach):
                 usage=chat_completion.usage,
             )
         )
+        # Return the answer, context, and session state
         return {
             "message": {
                 "content": chat_completion.choices[0].message.content,
@@ -121,6 +140,7 @@ class RetrieveThenReadApproach(Approach):
     async def run_search_approach(
         self, messages: list[ChatCompletionMessageParam], overrides: dict[str, Any], auth_claims: dict[str, Any]
     ):
+        # Determine which retrieval modes and features to use based on overrides
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
@@ -137,6 +157,7 @@ class RetrieveThenReadApproach(Approach):
         if use_vector_search:
             vectors.append(await self.compute_text_embedding(q))
 
+        # Perform the search using the configured parameters
         results = await self.search(
             top,
             q,
@@ -151,8 +172,10 @@ class RetrieveThenReadApproach(Approach):
             use_query_rewriting,
         )
 
+        # Prepare the text sources for the answer prompt
         text_sources = self.get_sources_content(results, use_semantic_captions, use_image_citation=False)
 
+        # Return ExtraInfo with reasoning steps (thoughts) and supporting data
         return ExtraInfo(
             DataPoints(text=text_sources),
             thoughts=[
@@ -182,6 +205,7 @@ class RetrieveThenReadApproach(Approach):
         overrides: dict[str, Any],
         auth_claims: dict[str, Any],
     ):
+        # Extract agentic retrieval parameters from overrides
         minimum_reranker_score = overrides.get("minimum_reranker_score", 0)
         search_index_filter = self.build_filter(overrides, auth_claims)
         top = overrides.get("top", 3)
@@ -190,6 +214,7 @@ class RetrieveThenReadApproach(Approach):
         # 50 is the amount of documents that the reranker can process per query
         max_docs_for_reranker = max_subqueries * 50
 
+        # Run the agentic retrieval workflow using Azure's KnowledgeAgentRetrievalClient
         response, results = await self.run_agentic_retrieval(
             messages,
             self.agent_client,
@@ -201,8 +226,10 @@ class RetrieveThenReadApproach(Approach):
             results_merge_strategy=results_merge_strategy,
         )
 
+        # Prepare the text sources from the agentic retrieval results
         text_sources = self.get_sources_content(results, use_semantic_captions=False, use_image_citation=False)
 
+        # Build the ExtraInfo object with all reasoning steps (thoughts) and supporting data
         extra_info = ExtraInfo(
             DataPoints(text=text_sources),
             thoughts=[

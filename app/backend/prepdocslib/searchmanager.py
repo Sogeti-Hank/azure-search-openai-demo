@@ -88,10 +88,13 @@ class SearchManager:
         self.search_images = search_images
 
     async def create_index(self):
+        # Log the start of the index creation/check process
         logger.info("Checking whether search index %s exists...", self.search_info.index_name)
 
+        # Open a client session for the search index
         async with self.search_info.create_search_index_client() as search_index_client:
 
+            # Initialize variables for possible index fields and vector search configurations
             embedding_field = None
             image_embedding_field = None
             text_vector_search_profile = None
@@ -100,7 +103,9 @@ class SearchManager:
             image_vector_search_profile = None
             image_vector_algorithm = None
 
+            # If embeddings are enabled, set up embedding field and vector search configuration
             if self.embeddings:
+                # Ensure embedding dimensions and field name are provided
                 if self.embedding_dimensions is None:
                     raise ValueError(
                         "Embedding dimensions must be set in order to add an embedding field to the search index"
@@ -111,6 +116,7 @@ class SearchManager:
                     )
 
                 text_vectorizer = None
+                # If using Azure OpenAI embeddings, configure the vectorizer
                 if isinstance(self.embeddings, AzureOpenAIEmbeddingService):
                     text_vectorizer = AzureOpenAIVectorizer(
                         vectorizer_name=f"{self.embeddings.open_ai_model_name}-vectorizer",
@@ -121,13 +127,14 @@ class SearchManager:
                         ),
                     )
 
+                # Configure vector search algorithm and compression for text
                 text_vector_algorithm = HnswAlgorithmConfiguration(
                     name="hnsw_config",
                     parameters=HnswParameters(metric="cosine"),
                 )
                 text_vector_compression = BinaryQuantizationCompression(
                     compression_name=f"{self.field_name_embedding}-compression",
-                    truncation_dimension=1024,  # should this be a parameter? maybe not yet?
+                    truncation_dimension=1024,  # can be parameterized if needed
                     rescoring_options=RescoringOptions(
                         enable_rescoring=True,
                         default_oversampling=10,
@@ -137,6 +144,7 @@ class SearchManager:
                     rerank_with_original_vectors=None,
                     default_oversampling=None,
                 )
+                # Create a vector search profile for text embeddings
                 text_vector_search_profile = VectorSearchProfile(
                     name=f"{self.field_name_embedding}-profile",
                     algorithm_configuration_name=text_vector_algorithm.name,
@@ -144,6 +152,7 @@ class SearchManager:
                     **({"vectorizer_name": text_vectorizer.vectorizer_name if text_vectorizer else None}),
                 )
 
+                # Define the embedding field for the index
                 embedding_field = SearchField(
                     name=self.field_name_embedding,
                     type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
@@ -157,6 +166,7 @@ class SearchManager:
                     stored=False,
                 )
 
+            # If image search is enabled, set up image embedding field and vector search configuration
             if self.search_images:
                 image_vector_algorithm = HnswAlgorithmConfiguration(
                     name="image_hnsw_config",
@@ -178,8 +188,10 @@ class SearchManager:
                     vector_search_profile_name=image_vector_search_profile.name,
                 )
 
+            # Check if the index already exists
             if self.search_info.index_name not in [name async for name in search_index_client.list_index_names()]:
                 logger.info("Creating new search index %s", self.search_info.index_name)
+                # Define the fields for the new index, including custom and optional fields
                 fields = [
                     (
                         SimpleField(name="id", type="Edm.String", key=True)
@@ -222,6 +234,7 @@ class SearchManager:
                         facetable=False,
                     ),
                 ]
+                # Optionally add ACL fields if enabled
                 if self.use_acls:
                     fields.append(
                         SimpleField(
@@ -238,14 +251,17 @@ class SearchManager:
                         )
                     )
 
+                # Optionally add parent_id field for integrated vectorization
                 if self.use_int_vectorization:
                     logger.info("Including parent_id field for integrated vectorization support in new index")
                     fields.append(SearchableField(name="parent_id", type="Edm.String", filterable=True))
 
+                # Prepare lists for vector search configuration
                 vectorizers: list[VectorSearchVectorizer] = []
                 vector_search_profiles = []
                 vector_algorithms: list[VectorSearchAlgorithmConfiguration] = []
                 vector_compressions: list[VectorSearchCompression] = []
+                # If embedding field is defined, add it and its vector search config
                 if embedding_field:
                     logger.info("Including %s field for text vectors in new index", embedding_field.name)
                     fields.append(embedding_field)
@@ -261,6 +277,7 @@ class SearchManager:
                     vector_algorithms.append(text_vector_algorithm)
                     vector_compressions.append(text_vector_compression)
 
+                # If image embedding field is defined, add it and its vector search config
                 if image_embedding_field:
                     logger.info("Including %s field for image vectors in new index", image_embedding_field.name)
                     fields.append(image_embedding_field)
@@ -269,6 +286,7 @@ class SearchManager:
                     vector_search_profiles.append(image_vector_search_profile)
                     vector_algorithms.append(image_vector_algorithm)
 
+                # Create the SearchIndex object with all fields and configurations
                 index = SearchIndex(
                     name=self.search_info.index_name,
                     fields=fields,
@@ -292,8 +310,10 @@ class SearchManager:
                     ),
                 )
 
+                # Create the index in Azure Cognitive Search
                 await search_index_client.create_index(index)
             else:
+                # If the index already exists, update it as needed (handled in the rest of the function)
                 logger.info("Search index %s already exists", self.search_info.index_name)
                 existing_index = await search_index_client.get_index(self.search_info.index_name)
                 if not any(field.name == "storageUrl" for field in existing_index.fields):

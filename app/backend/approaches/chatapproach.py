@@ -1,3 +1,14 @@
+"""
+chatapproach.py
+
+This module defines the abstract base class `ChatApproach`, which extends the core `Approach` class for chat-based retrieval-augmented generation (RAG) and agentic approaches. It provides:
+- The `run_until_final_call` abstract method for subclasses to implement multi-step chat workflows.
+- Utility methods for extracting search queries, follow-up questions, and orchestrating chat completions with or without streaming.
+- Methods for running chat-based approaches with or without streaming, handling follow-up question extraction, and managing session state/context.
+
+This file is the foundation for all chat-based approaches, including multi-step and agentic workflows, and is extended by concrete implementations such as ChatReadRetrieveReadApproach.
+"""
+
 import json
 import re
 from abc import ABC, abstractmethod
@@ -18,16 +29,23 @@ from approaches.approach import (
 
 
 class ChatApproach(Approach, ABC):
-
+    # Constant for no-response marker
     NO_RESPONSE = "0"
 
     @abstractmethod
     async def run_until_final_call(
         self, messages, overrides, auth_claims, should_stream
     ) -> tuple[ExtraInfo, Union[Awaitable[ChatCompletion], Awaitable[AsyncStream[ChatCompletionChunk]]]]:
+        """
+        Abstract method to be implemented by subclasses. Should run the multi-step chat workflow up to the final LLM call.
+        Returns extra_info and the coroutine for the final chat completion.
+        """
         pass
 
     def get_search_query(self, chat_completion: ChatCompletion, user_query: str):
+        """
+        Extracts the search query from the chat completion response, handling tool calls and fallback to user query.
+        """
         response_message = chat_completion.choices[0].message
 
         if response_message.tool_calls:
@@ -46,6 +64,10 @@ class ChatApproach(Approach, ABC):
         return user_query
 
     def extract_followup_questions(self, content: Optional[str]):
+        """
+        Extracts follow-up questions from the content using the <<...>> marker convention.
+        Returns the main content and a list of follow-up questions.
+        """
         if content is None:
             return content, []
         return content.split("<<")[0], re.findall(r"<<([^>>]+)>>", content)
@@ -57,6 +79,9 @@ class ChatApproach(Approach, ABC):
         auth_claims: dict[str, Any],
         session_state: Any = None,
     ) -> dict[str, Any]:
+        """
+        Runs the chat approach without streaming, handling follow-up questions and token usage.
+        """
         extra_info, chat_coroutine = await self.run_until_final_call(
             messages, overrides, auth_claims, should_stream=False
         )
@@ -83,6 +108,9 @@ class ChatApproach(Approach, ABC):
         auth_claims: dict[str, Any],
         session_state: Any = None,
     ) -> AsyncGenerator[dict, None]:
+        """
+        Runs the chat approach with streaming, yielding deltas as they arrive and handling follow-up questions.
+        """
         extra_info, chat_coroutine = await self.run_until_final_call(
             messages, overrides, auth_claims, should_stream=True
         )
@@ -99,7 +127,7 @@ class ChatApproach(Approach, ABC):
                 completion = {
                     "delta": {
                         "content": event["choices"][0]["delta"].get("content"),
-                        "role": event["choices"][0]["delta"]["role"],
+                        "role": event["choices"][0]["delta"].get("role"),
                     }
                 }
                 # if event contains << and not >>, it is start of follow-up question, truncate
@@ -136,6 +164,9 @@ class ChatApproach(Approach, ABC):
         session_state: Any = None,
         context: dict[str, Any] = {},
     ) -> dict[str, Any]:
+        """
+        Entrypoint for running the chat approach without streaming.
+        """
         overrides = context.get("overrides", {})
         auth_claims = context.get("auth_claims", {})
         return await self.run_without_streaming(messages, overrides, auth_claims, session_state)
@@ -146,6 +177,9 @@ class ChatApproach(Approach, ABC):
         session_state: Any = None,
         context: dict[str, Any] = {},
     ) -> AsyncGenerator[dict[str, Any], None]:
+        """
+        Entrypoint for running the chat approach with streaming.
+        """
         overrides = context.get("overrides", {})
         auth_claims = context.get("auth_claims", {})
         return self.run_with_streaming(messages, overrides, auth_claims, session_state)
