@@ -27,22 +27,27 @@ from .strategy import DocumentAction, SearchInfo, Strategy
 logger = logging.getLogger("scripts")
 
 
+# Asynchronously parses a file using the appropriate file processor and splits it into sections.
+# Returns a list of Section objects for further processing (e.g., indexing).
 async def parse_file(
     file: File,
     file_processors: dict[str, FileProcessor],
     category: Optional[str] = None,
     image_embeddings: Optional[ImageEmbeddings] = None,
 ) -> list[Section]:
-    key = file.file_extension().lower()
-    processor = file_processors.get(key)
+    key = file.file_extension().lower()  # Get the file extension to select the processor
+    processor = file_processors.get(key)  # Retrieve the processor for this file type
     if processor is None:
         logger.info("Skipping '%s', no parser found.", file.filename())
         return []
     logger.info("Ingesting '%s'", file.filename())
+    # Parse the file content into pages (async generator)
     pages = [page async for page in processor.parser.parse(content=file.content)]
     logger.info("Splitting '%s' into sections", file.filename())
     if image_embeddings:
+        # Warn if image embeddings are used, as images are chunked differently
         logger.warning("Each page will be split into smaller chunks of text, but images will be of the entire page.")
+    # Split pages into smaller sections for indexing
     sections = [
         Section(split_page, content=file, category=category) for split_page in processor.splitter.split_pages(pages)
     ]
@@ -70,6 +75,7 @@ class FileStrategy(Strategy):
         use_content_understanding: bool = False,
         content_understanding_endpoint: Optional[str] = None,
     ):
+        # Store all configuration and dependencies for the strategy
         self.list_file_strategy = list_file_strategy
         self.blob_manager = blob_manager
         self.file_processors = file_processors
@@ -84,6 +90,7 @@ class FileStrategy(Strategy):
         self.use_content_understanding = use_content_understanding
         self.content_understanding_endpoint = content_understanding_endpoint
 
+    # Initializes the SearchManager with the provided configuration
     def setup_search_manager(self):
         self.search_manager = SearchManager(
             self.search_info,
@@ -95,6 +102,7 @@ class FileStrategy(Strategy):
             search_images=self.image_embeddings is not None,
         )
 
+    # Sets up the search index and (optionally) content understanding analyzer
     async def setup(self):
         self.setup_search_manager()
         await self.search_manager.create_index()
@@ -109,24 +117,29 @@ class FileStrategy(Strategy):
             cu_manager = ContentUnderstandingDescriber(self.content_understanding_endpoint, self.search_info.credential)
             await cu_manager.create_analyzer()
 
+    # Main entry point for running the ingestion/removal process based on document_action
     async def run(self):
         self.setup_search_manager()
         if self.document_action == DocumentAction.Add:
-            files = self.list_file_strategy.list()
+            files = self.list_file_strategy.list()  # List files to ingest
             async for file in files:
                 try:
+                    # Parse and split file into sections
                     sections = await parse_file(file, self.file_processors, self.category, self.image_embeddings)
                     if sections:
+                        # Upload file to blob storage and get SAS URIs
                         blob_sas_uris = await self.blob_manager.upload_blob(file)
                         blob_image_embeddings: Optional[list[list[float]]] = None
                         if self.image_embeddings and blob_sas_uris:
+                            # Generate image embeddings if enabled
                             blob_image_embeddings = await self.image_embeddings.create_embeddings(blob_sas_uris)
+                        # Update the search index with the new content
                         await self.search_manager.update_content(sections, blob_image_embeddings, url=file.url)
                 finally:
                     if file:
-                        file.close()
+                        file.close()  # Ensure file is closed after processing
         elif self.document_action == DocumentAction.Remove:
-            paths = self.list_file_strategy.list_paths()
+            paths = self.list_file_strategy.list_paths()  # List file paths to remove
             async for path in paths:
                 await self.blob_manager.remove_blob(path)
                 await self.search_manager.remove_content(path)
@@ -148,6 +161,7 @@ class UploadUserFileStrategy:
         image_embeddings: Optional[ImageEmbeddings] = None,
         search_field_name_embedding: Optional[str] = None,
     ):
+        # Store configuration and dependencies for user-uploaded file ingestion
         self.file_processors = file_processors
         self.embeddings = embeddings
         self.image_embeddings = image_embeddings
@@ -163,6 +177,7 @@ class UploadUserFileStrategy:
         )
         self.search_field_name_embedding = search_field_name_embedding
 
+    # Adds a user-uploaded file to the search index
     async def add_file(self, file: File):
         if self.image_embeddings:
             logging.warning("Image embeddings are not currently supported for the user upload feature")
@@ -170,6 +185,7 @@ class UploadUserFileStrategy:
         if sections:
             await self.search_manager.update_content(sections, url=file.url)
 
+    # Removes a user-uploaded file from the search index
     async def remove_file(self, filename: str, oid: str):
         if filename is None or filename == "":
             logging.warning("Filename is required to remove a file")
