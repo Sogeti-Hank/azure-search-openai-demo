@@ -1,3 +1,17 @@
+"""
+blobmanager.py
+
+This module provides the BlobManager class, which manages uploading and 
+deleting blobs containing citation information in an Azure Blob Storage 
+account. It supports both standard and user-delegation SAS authentication, 
+and can handle PDF page image extraction and upload. 
+The class is designed for use in document processing pipelines, especially 
+for scenarios involving Azure-based search and AI solutions. 
+It also includes utility methods for generating managed identity 
+connection strings and supports asynchronous operations for efficient cloud 
+interaction.
+"""
+
 import datetime
 import io
 import logging

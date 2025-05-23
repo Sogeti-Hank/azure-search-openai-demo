@@ -1,3 +1,15 @@
+"""
+integratedvectorizerstrategy.py
+
+This module defines the IntegratedVectorizerStrategy class, which manages
+the ingestion and vectorization of documents into Azure Cognitive Search
+using integrated vectorization and skillsets. It configures indexers, data
+sources, and embedding skills, supporting advanced scenarios like soft
+delete detection and index projection. The strategy is designed for use in
+automated pipelines that require seamless integration between Azure Blob
+Storage, AI embedding services, and search index management.
+"""
+
 import logging
 from typing import Optional
 

@@ -1,3 +1,13 @@
+"""
+textparser.py
+
+This module implements TextParser, a parser for extracting and cleaning
+text from plain text files. It uses regular expressions to normalize
+whitespace and newlines, and yields the cleaned text as a Page object. The
+parser is asynchronous and designed for use in document ingestion
+pipelines that require robust text extraction and preprocessing.
+"""
+
 import re
 from collections.abc import AsyncGenerator
 from typing import IO

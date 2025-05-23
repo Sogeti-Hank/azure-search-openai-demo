@@ -1,3 +1,15 @@
+"""
+mediadescriber.py
+
+This module provides classes for describing media content, particularly
+images, using Azure Content Understanding APIs. It includes an abstract
+MediaDescriber and a ContentUnderstandingDescriber that can create custom
+analyzers and poll for analysis results. The module is designed for
+integration with document processing pipelines that require extraction of
+structured information or descriptions from images, supporting advanced
+AI-powered document understanding scenarios.
+"""
+
 import logging
 from abc import ABC
 

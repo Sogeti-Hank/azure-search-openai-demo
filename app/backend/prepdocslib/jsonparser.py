@@ -1,3 +1,14 @@
+"""
+jsonparser.py
+
+This module implements JsonParser, a parser for converting JSON files into
+Page objects for document ingestion pipelines. It supports both top-level
+arrays and objects, yielding each as a Page for downstream processing. The
+parser is asynchronous and integrates with the broader parsing and
+splitting framework, enabling JSON data to be indexed or embedded for
+search and AI applications.
+"""
+
 import json
 from collections.abc import AsyncGenerator
 from typing import IO

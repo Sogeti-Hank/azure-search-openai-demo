@@ -1,3 +1,15 @@
+"""
+htmlparser.py
+
+This module provides LocalHTMLParser, a parser for extracting and cleaning
+text from HTML files using BeautifulSoup. It is designed for asynchronous
+document ingestion pipelines, converting HTML content into Page objects for
+further processing. The module includes utility functions for cleaning up
+whitespace and formatting, ensuring that extracted text is suitable for
+downstream text splitting and embedding. Logging is used for traceability
+during parsing operations.
+"""
+
 import logging
 import re
 from collections.abc import AsyncGenerator

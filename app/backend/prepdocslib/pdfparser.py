@@ -1,3 +1,15 @@
+"""
+pdfparser.py
+
+This module provides PDF parsing capabilities for document ingestion
+pipelines. It includes LocalPdfParser, which uses PyPDF to extract text
+from PDF files, and DocumentAnalysisParser, which leverages Azure AI
+Document Intelligence for advanced parsing and content understanding. The
+module supports asynchronous parsing, figure extraction, and integration
+with Azure's Content Understanding APIs, enabling robust PDF processing
+for search and AI applications.
+"""
+
 import html
 import io
 import logging

@@ -1,3 +1,14 @@
+"""
+searchmanager.py
+
+This module defines the Section and SearchManager classes for managing
+Azure Cognitive Search indexes and content. Section represents a chunk of
+document content to be indexed, while SearchManager provides methods for
+creating indexes, updating content, and managing search agents. The module
+supports integration with embedding services and advanced search features,
+and is central to the document indexing and retrieval workflow.
+"""
+
 import asyncio
 import logging
 import os
@@ -189,6 +200,9 @@ class SearchManager:
                         analyzer_name=self.search_analyzer_name,
                     ),
                     SimpleField(name="category", type="Edm.String", filterable=True, facetable=True),
+                    SimpleField(name="planid", type="Edm.String", filterable=True, facetable=False), #hankAdded
+                    SimpleField(name="doctype", type="Edm.String", filterable=True, facetable=False), #hankAdded
+                    SimpleField(name="locale", type="Edm.String", filterable=True, facetable=True), #hankAdded
                     SimpleField(
                         name="sourcepage",
                         type="Edm.String",
@@ -381,18 +395,23 @@ class SearchManager:
             await self.create_agent()
 
     async def create_agent(self):
+        # If an agent name is specified, proceed to create or update the search agent
         if self.search_info.agent_name:
             logger.info(f"Creating search agent named {self.search_info.agent_name}")
 
+            # Open a client session for the search index
             async with self.search_info.create_search_index_client() as search_index_client:
+                # Create or update the KnowledgeAgent with the specified configuration
                 await search_index_client.create_or_update_agent(
                     agent=KnowledgeAgent(
                         name=self.search_info.agent_name,
+                        # Set the target index for the agent, including reference source data by default
                         target_indexes=[
                             KnowledgeAgentTargetIndex(
                                 index_name=self.search_info.index_name, default_include_reference_source_data=True
                             )
                         ],
+                        # Configure the agent to use the specified Azure OpenAI model
                         models=[
                             KnowledgeAgentAzureOpenAIModel(
                                 azure_open_ai_parameters=AzureOpenAIVectorizerParameters(
@@ -402,6 +421,7 @@ class SearchManager:
                                 )
                             )
                         ],
+                        # Set request limits for the agent (e.g., max output tokens)
                         request_limits=KnowledgeAgentRequestLimits(
                             max_output_size=self.search_info.agent_max_output_tokens
                         ),
@@ -413,16 +433,25 @@ class SearchManager:
     async def update_content(
         self, sections: list[Section], image_embeddings: Optional[list[list[float]]] = None, url: Optional[str] = None
     ):
+        # Maximum number of documents to upload in a single batch
         MAX_BATCH_SIZE = 1000
+        # Split the sections into batches for uploading
         section_batches = [sections[i : i + MAX_BATCH_SIZE] for i in range(0, len(sections), MAX_BATCH_SIZE)]
 
+        # Open a client session for the search service
         async with self.search_info.create_search_client() as search_client:
+            # Iterate over each batch of sections
             for batch_index, batch in enumerate(section_batches):
+                # Prepare the documents for upload
                 documents = [
                     {
+                        # Generate a unique ID for each section based on filename and page
                         "id": f"{section.content.filename_to_id()}-page-{section_index + batch_index * MAX_BATCH_SIZE}",
+                        # The text content of the section
                         "content": section.split_page.text,
+                        # The category of the section (if any)
                         "category": section.category,
+                        # The source page, using image or text source depending on image_embeddings
                         "sourcepage": (
                             BlobManager.blob_image_name_from_file_page(
                                 filename=section.content.filename(),
@@ -434,14 +463,18 @@ class SearchManager:
                                 page=section.split_page.page_num,
                             )
                         ),
+                        # The source file name
                         "sourcefile": section.content.filename(),
+                        # Include any ACLs from the content
                         **section.content.acls,
                     }
                     for section_index, section in enumerate(batch)
                 ]
+                # If a storage URL is provided, add it to each document
                 if url:
                     for document in documents:
                         document["storageUrl"] = url
+                # If embeddings are enabled, generate and add them to each document
                 if self.embeddings:
                     if self.field_name_embedding is None:
                         raise ValueError("Embedding field name must be set")
@@ -450,10 +483,12 @@ class SearchManager:
                     )
                     for i, document in enumerate(documents):
                         document[self.field_name_embedding] = embeddings[i]
+                # If image embeddings are provided, add them to each document
                 if image_embeddings:
                     for i, (document, section) in enumerate(zip(documents, batch)):
                         document["imageEmbedding"] = image_embeddings[section.split_page.page_num]
 
+                # Upload the batch of documents to the search index
                 await search_client.upload_documents(documents)
 
     async def remove_content(self, path: Optional[str] = None, only_oid: Optional[str] = None):

@@ -1,3 +1,14 @@
+"""
+strategy.py
+
+This module defines abstract base classes and enums for document ingestion
+strategies in Azure-based search solutions. It includes SearchInfo for
+managing search service connections, DocumentAction for specifying
+ingestion actions, and Strategy as the base class for all ingestion
+strategies. The module provides the foundation for extensible, pluggable
+document processing workflows.
+"""
+
 from abc import ABC
 from enum import Enum
 from typing import Optional, Union

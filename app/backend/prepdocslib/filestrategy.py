@@ -1,3 +1,16 @@
+"""
+filestrategy.py
+
+This module implements file ingestion strategies for Azure-based document
+search solutions. It provides asynchronous logic for parsing, splitting, and
+processing files from local or cloud storage, and integrates with blob
+storage, embedding services, and search index management. The FileStrategy
+class orchestrates the end-to-end ingestion process, supporting features like
+ACLs, content understanding, and category tagging. The module is extensible
+for different file sources and document actions, and is central to the
+document ingestion workflow.
+"""
+
 import logging
 from typing import Optional
 

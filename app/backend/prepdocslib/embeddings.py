@@ -1,3 +1,15 @@
+"""
+embeddings.py
+
+This module provides classes and logic for generating text and image
+embeddings using OpenAI and Azure OpenAI services. It includes batching,
+retry logic, and support for different embedding models and dimensions. The
+core classes abstract the embedding process, allowing integration with both
+OpenAI and Azure endpoints, and support asynchronous operations for scalable
+document processing. The module is a key component in pipelines that require
+semantic search, vectorization, or AI-powered document analysis.
+"""
+
 import logging
 from abc import ABC
 from collections.abc import Awaitable

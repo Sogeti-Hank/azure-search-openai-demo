@@ -1,3 +1,14 @@
+"""
+listfilestrategy.py
+
+This module provides abstract and concrete strategies for listing files from
+local filesystems or Azure Data Lake Storage (ADLS Gen2). It defines the
+File class for representing files with optional ACLs and metadata, and
+supports asynchronous iteration over files and paths. The strategies are
+used in document ingestion pipelines to enumerate and access files for
+parsing, splitting, and indexing in search solutions.
+"""
+
 import base64
 import hashlib
 import logging

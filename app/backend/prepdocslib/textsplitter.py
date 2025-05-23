@@ -1,3 +1,15 @@
+"""
+textsplitter.py
+
+This module provides classes for splitting document pages into smaller
+sections for embedding or indexing. It defines abstract and concrete
+splitters, including SentenceTextSplitter and SimpleTextSplitter, which
+use token counts, word breaks, and sentence endings to divide text. The
+module is essential for preparing document content for semantic search and
+AI-powered retrieval, ensuring that text fits within model and index
+limits.
+"""
+
 import logging
 from abc import ABC
 from collections.abc import Generator

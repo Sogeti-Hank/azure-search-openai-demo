@@ -1,3 +1,14 @@
+"""
+page.py
+
+This module defines the Page and SplitPage classes, which represent
+logical units of document content for processing in search and AI
+pipelines. Page encapsulates a single page of a document, including its
+text and offset, while SplitPage represents a smaller chunk of a page for
+fine-grained embedding or indexing. These classes are foundational for
+parsing, splitting, and managing document content in the pipeline.
+"""
+
 class Page:
     """
     A single page from a document

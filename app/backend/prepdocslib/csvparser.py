@@ -1,3 +1,14 @@
+"""
+csvparser.py
+
+This module defines CsvParser, a concrete parser for reading CSV files and
+converting each row into a Page object for further processing. It is designed
+to work asynchronously and integrates with a document ingestion pipeline,
+allowing CSV data to be split into logical pages for downstream text splitting
+and embedding. The parser handles both binary and text file inputs and skips
+header rows to yield only data rows as Page objects.
+"""
+
 import csv
 from collections.abc import AsyncGenerator
 from typing import IO
