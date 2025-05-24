@@ -1,3 +1,16 @@
+"""
+chatreadretrieveread.py
+
+This module implements the ChatReadRetrieveReadApproach, a multi-step retrieval-augmented generation (RAG) approach for chat-based applications. It orchestrates the following workflow:
+- Uses OpenAI to rewrite the user's question into an optimized search query (optionally using a prompt and tools).
+- Executes a search against Azure Cognitive Search (using text, vector, or hybrid retrieval, with optional semantic ranker/captions).
+- Optionally supports agentic retrieval using Azure's KnowledgeAgentRetrievalClient for more advanced, multi-step search strategies.
+- Collects and structures the retrieved data and reasoning steps (thoughts) for transparency and debugging.
+- Sends the conversation history, user query, and search results to OpenAI to generate a final response, supporting both streaming and non-streaming modes.
+
+This approach is designed for advanced chatbots and assistants that require accurate, context-aware answers grounded in enterprise data, and supports both standard and agentic retrieval workflows.
+"""
+
 from collections.abc import Awaitable
 from typing import Any, Optional, Union, cast
 
@@ -48,6 +61,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         prompt_manager: PromptManager,
         reasoning_effort: Optional[str] = None,
     ):
+        # Store all configuration and service clients for use in the approach
         self.search_client = search_client
         self.search_index_name = search_index_name
         self.agent_model = agent_model
@@ -66,6 +80,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         self.query_language = query_language
         self.query_speller = query_speller
         self.prompt_manager = prompt_manager
+        # Load prompts and tools for query rewriting and answer generation
         self.query_rewrite_prompt = self.prompt_manager.load_prompt("chat_query_rewrite.prompty")
         self.query_rewrite_tools = self.prompt_manager.load_tools("chat_query_rewrite_tools.json")
         self.answer_prompt = self.prompt_manager.load_prompt("chat_answer_question.prompty")
@@ -79,19 +94,23 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         auth_claims: dict[str, Any],
         should_stream: bool = False,
     ) -> tuple[ExtraInfo, Union[Awaitable[ChatCompletion], Awaitable[AsyncStream[ChatCompletionChunk]]]]:
+        # Determine if agentic retrieval should be used (multi-step, subqueries, etc.)
         use_agentic_retrieval = True if overrides.get("use_agentic_retrieval") else False
         original_user_query = messages[-1]["content"]
 
+        # Check if the selected model supports streaming if requested
         reasoning_model_support = self.GPT_REASONING_MODELS.get(self.chatgpt_model)
         if reasoning_model_support and (not reasoning_model_support.streaming and should_stream):
             raise Exception(
                 f"{self.chatgpt_model} does not support streaming. Please use a different model or disable streaming."
             )
+        # Run either agentic or standard search approach
         if use_agentic_retrieval:
             extra_info = await self.run_agentic_retrieval_approach(messages, overrides, auth_claims)
         else:
             extra_info = await self.run_search_approach(messages, overrides, auth_claims)
 
+        # Prepare the final answer prompt, including all context and search results
         messages = self.prompt_manager.render_prompt(
             self.answer_prompt,
             self.get_system_prompt_variables(overrides.get("prompt_template"))
@@ -103,6 +122,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             },
         )
 
+        # Create the coroutine for the final chat completion (streaming or not)
         chat_coroutine = cast(
             Union[Awaitable[ChatCompletion], Awaitable[AsyncStream[ChatCompletionChunk]]],
             self.create_chat_completion(
@@ -114,6 +134,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
                 should_stream,
             ),
         )
+        # Add a thought step for the answer generation
         extra_info.thoughts.append(
             self.format_thought_step_for_chatcompletion(
                 title="Prompt to generate answer",
@@ -129,6 +150,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
     async def run_search_approach(
         self, messages: list[ChatCompletionMessageParam], overrides: dict[str, Any], auth_claims: dict[str, Any]
     ):
+        # Determine which retrieval modes and features to use based on overrides
         use_text_search = overrides.get("retrieval_mode") in ["text", "hybrid", None]
         use_vector_search = overrides.get("retrieval_mode") in ["vectors", "hybrid", None]
         use_semantic_ranker = True if overrides.get("semantic_ranker") else False
@@ -143,13 +165,13 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         if not isinstance(original_user_query, str):
             raise ValueError("The most recent message content must be a string.")
 
+        # Render the prompt for query rewriting (if enabled)
         query_messages = self.prompt_manager.render_prompt(
             self.query_rewrite_prompt, {"user_query": original_user_query, "past_messages": messages[:-1]}
         )
         tools: list[ChatCompletionToolParam] = self.query_rewrite_tools
 
         # STEP 1: Generate an optimized keyword search query based on the chat history and the last question
-
         chat_completion = cast(
             ChatCompletion,
             await self.create_chat_completion(
@@ -166,13 +188,13 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             ),
         )
 
+        # Extract the search query from the LLM response
         query_text = self.get_search_query(chat_completion, original_user_query)
 
         # STEP 2: Retrieve relevant documents from the search index with the GPT optimized query
-
-        # If retrieval mode includes vectors, compute an embedding for the query
         vectors: list[VectorQuery] = []
         if use_vector_search:
+            # Compute vector embedding for the query if vector search is enabled
             vectors.append(await self.compute_text_embedding(query_text))
 
         results = await self.search(
@@ -192,6 +214,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         # STEP 3: Generate a contextual and content specific answer using the search results and chat history
         text_sources = self.get_sources_content(results, use_semantic_captions, use_image_citation=False)
 
+        # Build the ExtraInfo object with all reasoning steps (thoughts) and supporting data
         extra_info = ExtraInfo(
             DataPoints(text=text_sources),
             thoughts=[
@@ -231,6 +254,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         overrides: dict[str, Any],
         auth_claims: dict[str, Any],
     ):
+        # Extract agentic retrieval parameters from overrides
         minimum_reranker_score = overrides.get("minimum_reranker_score", 0)
         search_index_filter = self.build_filter(overrides, auth_claims)
         top = overrides.get("top", 3)
@@ -239,6 +263,7 @@ class ChatReadRetrieveReadApproach(ChatApproach):
         # 50 is the amount of documents that the reranker can process per query
         max_docs_for_reranker = max_subqueries * 50
 
+        # Run the agentic retrieval workflow using Azure's KnowledgeAgentRetrievalClient
         response, results = await self.run_agentic_retrieval(
             messages=messages,
             agent_client=self.agent_client,
@@ -250,8 +275,10 @@ class ChatReadRetrieveReadApproach(ChatApproach):
             results_merge_strategy=results_merge_strategy,
         )
 
+        # Prepare the text sources from the agentic retrieval results
         text_sources = self.get_sources_content(results, use_semantic_captions=False, use_image_citation=False)
 
+        # Build the ExtraInfo object with all reasoning steps (thoughts) and supporting data
         extra_info = ExtraInfo(
             DataPoints(text=text_sources),
             thoughts=[

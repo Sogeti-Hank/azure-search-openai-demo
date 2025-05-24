@@ -23,6 +23,8 @@ from .listfilestrategy import File, ListFileStrategy
 from .mediadescriber import ContentUnderstandingDescriber
 from .searchmanager import SearchManager, Section
 from .strategy import DocumentAction, SearchInfo, Strategy
+from .planid_extractor import extract_plan_id_from_text
+import openai
 
 logger = logging.getLogger("scripts")
 
@@ -34,6 +36,7 @@ async def parse_file(
     file_processors: dict[str, FileProcessor],
     category: Optional[str] = None,
     image_embeddings: Optional[ImageEmbeddings] = None,
+    openai_client: Optional[object] = None,  # Pass an OpenAI client for LLM extraction
 ) -> list[Section]:
     key = file.file_extension().lower()  # Get the file extension to select the processor
     processor = file_processors.get(key)  # Retrieve the processor for this file type
@@ -47,10 +50,22 @@ async def parse_file(
     if image_embeddings:
         # Warn if image embeddings are used, as images are chunked differently
         logger.warning("Each page will be split into smaller chunks of text, but images will be of the entire page.")
+
+    # --- Plan Identifier Extraction for PDFs ---
+    planid = None
+    if key == ".pdf" and pages and openai_client is not None:
+        first_page_text = pages[0].text if pages[0].text else ""
+        if first_page_text:
+            planid = await extract_plan_id_from_text(first_page_text, openai_client)
+            logger.info(f"Extracted Plan Identifier: {planid}")
+
     # Split pages into smaller sections for indexing
-    sections = [
-        Section(split_page, content=file, category=category) for split_page in processor.splitter.split_pages(pages)
-    ]
+    sections = []
+    for split_page in processor.splitter.split_pages(pages):
+        section = Section(split_page, content=file, category=category)
+        if planid is not None:
+            section.planid = planid  # Attach planid to Section for later indexing
+        sections.append(section)
     return sections
 
 

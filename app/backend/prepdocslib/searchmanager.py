@@ -60,6 +60,7 @@ class Section:
         self.split_page = split_page
         self.content = content
         self.category = category
+        self.planid = None  # Plan Identifier, to be set if available
 
 
 class SearchManager:
@@ -471,6 +472,7 @@ class SearchManager:
                         "content": section.split_page.text,
                         # The category of the section (if any)
                         "category": section.category,
+                        "planid": getattr(section, "planid", None),  # Add planid to document
                         # The source page, using image or text source depending on image_embeddings
                         "sourcepage": (
                             BlobManager.blob_image_name_from_file_page(
