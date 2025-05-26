@@ -17,14 +17,16 @@ from typing import Optional
 from azure.core.credentials import AzureKeyCredential
 
 from .blobmanager import BlobManager
-from .embeddings import ImageEmbeddings, OpenAIEmbeddings
+from .embeddings import ImageEmbeddings, OpenAIEmbeddings, AzureOpenAIEmbeddingService
 from .fileprocessor import FileProcessor
 from .listfilestrategy import File, ListFileStrategy
 from .mediadescriber import ContentUnderstandingDescriber
 from .searchmanager import SearchManager, Section
 from .strategy import DocumentAction, SearchInfo, Strategy
 from .planid_extractor import extract_plan_id_from_text
-import openai
+# from openai import AsyncAzureOpenAI, AsyncOpenAI
+
+
 
 logger = logging.getLogger("scripts")
 
@@ -55,6 +57,9 @@ async def parse_file(
     planid = None
     logger.info(f"File Key: {key}, Pages: {len(pages)}")
     logger.info(f"OpenAI Client: {openai_client}")
+    if openai_client is None:
+        openai_client = AzureOpenAIEmbeddingService.create_client()
+
     if key == ".pdf" and pages and openai_client is not None:
         first_page_text = pages[0].text if pages[0].text else ""
         if first_page_text:
@@ -92,6 +97,7 @@ class FileStrategy(Strategy):
         category: Optional[str] = None,
         use_content_understanding: bool = False,
         content_understanding_endpoint: Optional[str] = None,
+        openai_client: Optional[object] = None,
     ):
         # Store all configuration and dependencies for the strategy
         self.list_file_strategy = list_file_strategy
@@ -107,6 +113,7 @@ class FileStrategy(Strategy):
         self.category = category
         self.use_content_understanding = use_content_understanding
         self.content_understanding_endpoint = content_understanding_endpoint
+        self.openai_client = openai_client
 
     # Initializes the SearchManager with the provided configuration
     def setup_search_manager(self):
@@ -143,7 +150,7 @@ class FileStrategy(Strategy):
             async for file in files:
                 try:
                     # Parse and split file into sections
-                    sections = await parse_file(file, self.file_processors, self.category, self.image_embeddings)
+                    sections = await parse_file(file, self.file_processors, self.category, self.image_embeddings, self.openai_client)
                     if sections:
                         # Upload file to blob storage and get SAS URIs
                         blob_sas_uris = await self.blob_manager.upload_blob(file)
