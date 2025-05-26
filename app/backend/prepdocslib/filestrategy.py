@@ -53,9 +53,12 @@ async def parse_file(
 
     # --- Plan Identifier Extraction for PDFs ---
     planid = None
+    logger.info(f"File Key: {key}, Pages: {len(pages)}")
+    logger.info(f"OpenAI Client: {openai_client}")
     if key == ".pdf" and pages and openai_client is not None:
         first_page_text = pages[0].text if pages[0].text else ""
         if first_page_text:
+            logger.info("Extracting Plan Identifier from the first page of the PDF")
             planid = await extract_plan_id_from_text(first_page_text, openai_client)
             logger.info(f"Extracted Plan Identifier: {planid}")
 
