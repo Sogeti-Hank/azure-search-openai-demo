@@ -25,7 +25,10 @@ from .mediadescriber import ContentUnderstandingDescriber
 from .searchmanager import SearchManager, Section
 from .strategy import DocumentAction, SearchInfo, Strategy
 from .planid_extractor import extract_plan_id_from_text
-from .openai import AsyncAzureOpenAI, AsyncOpenAI
+# If openai.py exists in the same directory, keep this import.
+# If not, update the import path or install the required package.
+# Example for direct import if openai.py is in the same directory:
+from openai import AsyncAzureOpenAI, AsyncOpenAI
 
 
 
