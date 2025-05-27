@@ -41,7 +41,7 @@ def get_openai_client():
     ### azure_api_key = os.getenv("AZURE_OPENAI_KEY")
     openai_api_key = os.getenv("OPENAI_API_KEY")
 
-    if azure_endpoint and azure_api_key:
+    if azure_endpoint:    # and azure_api_key:
         return AsyncAzureOpenAI(
             ### api_key=azure_api_key,
             azure_endpoint=azure_endpoint,
