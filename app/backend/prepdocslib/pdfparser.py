@@ -55,6 +55,8 @@ class LocalPdfParser(Parser):
             yield Page(page_num=page_num, offset=offset, text=page_text)
             offset += len(page_text)
 
+         
+
 
 class DocumentAnalysisParser(Parser):
     """

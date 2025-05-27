@@ -40,13 +40,15 @@ async def extract_plan_id_from_text(text: str, openai_client, model: str = "gpt-
         response = await openai_client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=20,
+            max_tokens=100,
             temperature=0.0,
         )
         plan_id = response.choices[0].message.content.strip()
-        if plan_id.lower() == "none" or not plan_id:
-            return None
+        logger.info(f"PlanID Extractor response: {plan_id}")
+        #if plan_id.lower() == "none" or not plan_id:
+        #    return None
         return plan_id
+       
     except Exception as e:
         logger.warning(f"Plan ID extraction failed: {e}")
         return None

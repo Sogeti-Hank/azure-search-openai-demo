@@ -197,8 +197,10 @@ def setup_file_processors(
     pdf_parser: Optional[Parser] = None
     if local_pdf_parser or document_intelligence_service is None:
         pdf_parser = LocalPdfParser()
+        logging.info("Using local PDF parser")
     elif document_intelligence_service is not None:
         pdf_parser = doc_int_parser
+        logging.info("Using Document Intelligence PDF parser")
     else:
         logger.warning("No PDF parser available")
 
