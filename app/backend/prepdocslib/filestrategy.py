@@ -37,13 +37,13 @@ logger = logging.getLogger("scripts")
 def get_openai_client():
     # Prefer Azure OpenAI if endpoint is set, otherwise use OpenAI
     logging.info("Creating OpenAI client")
-    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-    azure_api_key = os.getenv("AZURE_OPENAI_KEY")
+    azure_endpoint = f"https://{os.getenv('AZURE_OPENAI_SERVICE')}.openai.azure.com"
+    ### azure_api_key = os.getenv("AZURE_OPENAI_KEY")
     openai_api_key = os.getenv("OPENAI_API_KEY")
 
     if azure_endpoint and azure_api_key:
         return AsyncAzureOpenAI(
-            api_key=azure_api_key,
+            ### api_key=azure_api_key,
             azure_endpoint=azure_endpoint,
             api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-06-01"),
         )
