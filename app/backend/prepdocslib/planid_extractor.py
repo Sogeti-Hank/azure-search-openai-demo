@@ -23,7 +23,15 @@ async def extract_plan_id_from_text(text: str, openai_client, model: str = "gpt-
     prompt = (
         "You are an expert at reading benefit plan documents. "
         "Extract the Plan Identifier from the following text. "
-        "If no Plan Identifier is found, respond with only 'None'.\n\n"
+        "If no Plan Identifier is found, set the planid in the following return format with only 'None'.\n\n"
+        "If a planid is found, set documentype to POC. "
+        "If there is no planid found, set the documenttype to A2Z if it is an A to Z document, or SBC if the doc is a Summary of Benefits and Coverage doc. "
+        "Return your answer as a JSON object with the following structure:\n"
+        '{\n'
+        '  "planid": <Plan Identifier or null>,\n'
+        f'  "documenttype": "{document_type}",\n'
+        f'  "locale": "{locale}"\n'
+        '}\n\n'
         f"Text:\n{text}"
     )
     try:
