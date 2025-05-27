@@ -59,6 +59,7 @@ async def parse_file(
     logger.info(f"OpenAI Client: {openai_client}")
     if openai_client is None:
         openai_client = AzureOpenAIEmbeddingService.create_client()
+        logger.info(f"OpenAI Client: {openai_client}")
 
     if key == ".pdf" and pages and openai_client is not None:
         first_page_text = pages[0].text if pages[0].text else ""
