@@ -12,6 +12,7 @@ document ingestion workflow.
 """
 
 import logging
+import os
 from typing import Optional
 
 from azure.core.credentials import AzureKeyCredential
@@ -24,11 +25,32 @@ from .mediadescriber import ContentUnderstandingDescriber
 from .searchmanager import SearchManager, Section
 from .strategy import DocumentAction, SearchInfo, Strategy
 from .planid_extractor import extract_plan_id_from_text
-# from openai import AsyncAzureOpenAI, AsyncOpenAI
+from .openai import AsyncAzureOpenAI, AsyncOpenAI
 
 
 
 logger = logging.getLogger("scripts")
+
+def get_openai_client():
+    # Prefer Azure OpenAI if endpoint is set, otherwise use OpenAI
+    logging.info("Creating OpenAI client")
+    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+    azure_api_key = os.getenv("AZURE_OPENAI_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+
+    if azure_endpoint and azure_api_key:
+        return AsyncAzureOpenAI(
+            api_key=azure_api_key,
+            azure_endpoint=azure_endpoint,
+            api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-06-01"),
+        )
+    elif openai_api_key:
+        return AsyncOpenAI(
+            api_key=openai_api_key,
+        )
+    else:
+        raise ValueError("No OpenAI or Azure OpenAI credentials found in environment variables.")
+
 
 
 # Asynchronously parses a file using the appropriate file processor and splits it into sections.
@@ -58,7 +80,8 @@ async def parse_file(
     logger.info(f"File Key: {key}, Pages: {len(pages)}")
     logger.info(f"OpenAI Client: {openai_client}")
     if openai_client is None:
-        openai_client = AzureOpenAIEmbeddingService.create_client()
+       # openai_client = AzureOpenAIEmbeddingService.create_client()  -hank  TypeError: AzureOpenAIEmbeddingService.create_client() missing 1 required positional argument: 'self'
+        openai_client = get_openai_client()  # Get OpenAI client if not provided
         logger.info(f"OpenAI Client: {openai_client}")
 
     if key == ".pdf" and pages and openai_client is not None:
