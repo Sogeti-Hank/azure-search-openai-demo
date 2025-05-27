@@ -27,6 +27,7 @@ async def extract_plan_id_from_text(text: str, openai_client, model: str = "gpt-
         f"Text:\n{text}"
     )
     try:
+        logger.info("PlanID Extractor entry.")
         response = await openai_client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
