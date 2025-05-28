@@ -1,5 +1,12 @@
 from azure.search.documents.indexes.models import SimpleField
-from typing import Any, Dict
+from azure.identity.aio import (
+    AzureDeveloperCliCredential,
+    ManagedIdentityCredential,
+    get_bearer_token_provider,
+)
+from typing import Any, Dict, Union
+from openai import AsyncAzureOpenAI
+
 
 class FieldCustomizer:
     """
@@ -31,6 +38,15 @@ class MedicaDocClassifier:
         Uses an LLM to classify the document and extract metadata.
         Returns a dict with keys like 'doctype', 'planid', 'locale', etc.
         """
+
+        azure_credential: Union[AzureDeveloperCliCredential, ManagedIdentityCredential]
+        if not self.llm_client:
+            token_provider = get_bearer_token_provider(azure_credential, "https://cognitiveservices.azure.com/.default")
+            llm_client = AsyncAzureOpenAI(
+                api_version=AZURE_OPENAI_API_VERSION,
+                azure_endpoint=endpoint,
+                azure_ad_token_provider=token_provider,
+            )
         prompt = (
             "Classify the following document and extract metadata fields such as doctype, planid, and locale. "
             "Return the result as a JSON object.\n\n"

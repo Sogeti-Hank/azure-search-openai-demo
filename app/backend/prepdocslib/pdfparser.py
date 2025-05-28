@@ -109,6 +109,7 @@ class DocumentAnalysisParser(Parser):
             analyze_result: AnalyzeResult = await poller.result()
 
             offset = 0
+            planid = analyze_result.metadata.set("planid", "HTL")  ## Hank
             for page in analyze_result.pages:
                 tables_on_page = [
                     table
@@ -176,7 +177,11 @@ class DocumentAnalysisParser(Parser):
                 page_text = page_text.replace("<!-- PageBreak -->", "")
                 # We remove excess newlines at the beginning and end of the page
                 page_text = page_text.strip()
-                yield Page(page_num=page.page_number - 1, offset=offset, text=page_text)
+                if page.page_number == 1:
+                    # If this is the first page, we assume it has a planid
+                    # This is a hack to support the Medica use case
+                    planid = analyze_result.metadata.get("planid", None)
+                yield Page(page_num=page.page_number - 1, offset=offset, text=page_text, planid=planid)
                 offset += len(page_text)
 
     @staticmethod
