@@ -280,7 +280,7 @@ class SearchManager:
                 )
                 # Add custom fields to the index based on project needs
                 # See "customizations" folder for more information
-                FieldCustomizer.append_fields(fields)
+                append_fields(fields)
                 await search_index_client.create_index(index)
             else:
                 logger.info("Search index %s already exists", self.search_info.index_name)
