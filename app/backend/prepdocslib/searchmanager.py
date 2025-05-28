@@ -51,6 +51,7 @@ class Section:
         self.content = content
         self.category = category
         self.planid = content.acls.get("planid", None)  ## Hank
+        
 
 
 
@@ -442,7 +443,7 @@ class SearchManager:
                         ),
                         "sourcefile": section.content.filename(),
                         **section.content.acls,
-                        "planid": "XYZ", ##section.planid,  ## Hank
+                        "planid": section.planid,  ## Hank
                     }
                     for section_index, section in enumerate(batch)
                 ]
