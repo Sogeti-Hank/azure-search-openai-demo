@@ -48,13 +48,23 @@ class MedicaDocClassifier:
             azure_credential = AzureDeveloperCliCredential()  # or ManagedIdentityCredential()
             token_provider = get_bearer_token_provider(azure_credential, "https://cognitiveservices.azure.com/.default")
             llm_client = AsyncAzureOpenAI(
-                api_version=AZURE_OPENAI_API_VERSION,
+                api_version=AZURE_OPENAI_API_VERSION or "2024-10-21",
                 azure_endpoint= "https://cog-zvuhhhpiitc46.openai.azure.com/",  ## endpoint,  -Hank
                 azure_ad_token_provider=token_provider,
             )
         prompt = (
-            "Classify the following document and extract metadata fields such as doctype, planid, and locale. "
-            "Return the result as a JSON object.\n\n"
+            """You are an intelligent assistant helping to classify documents and extract metadata from them.
+                You will answer in the json format provided in the example below, do not stray from this concise answer pattern, do not add any info you do not find in the provided text.
+                If you cannot determine an answer, remember it is better to give a 100% correct response than it is to give a guess.
+
+                If you can determine that the string has a value for "Plan Identifier", it may look like "2025-IFBAPBCPCMNZ" for instance, then you have found a document where doctype = poc, and planid = the Plan Identifier previously described.  In this same doc, you will find the state that the plan applies to, return the 2 letter abbreviation for the state as the locale.
+                
+
+                If you can determine that the string has a value for "Summary of Benefits and Coverage:" then you have found a Summary of Benefits doc, where doctype = sbc, but leave the locale and planid blank. See the following example
+                
+
+                If you can determine that the string has the following value: Location: Benefits/A-Z List, then you have a doctype = a2z, but leave the locale and planid blank. See the following example.
+               """
             f"Document:\n{text[:2000]}"  # Limit to first 2000 chars for prompt size
         )
         response = await self.llm_client.chat.completions.create(
