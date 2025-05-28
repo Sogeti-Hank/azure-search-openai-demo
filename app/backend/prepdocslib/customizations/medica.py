@@ -51,7 +51,7 @@ class MedicaDocClassifier:
             token_provider = get_bearer_token_provider(azure_credential, "https://cognitiveservices.azure.com/.default")
             token = await token_provider()
             logger.info(f"Token: {token}")
-            llm_client = await AsyncAzureOpenAI(
+            self.llm_client =  AsyncAzureOpenAI(
                 api_version= os.getenv("AZURE_OPENAI_API_VERSION") or "2024-06-01",
                 azure_endpoint= "https://cog-zvuhhhpiitc46.openai.azure.com/",  ## endpoint,  -Hank
                 azure_ad_token_provider=token_provider,
