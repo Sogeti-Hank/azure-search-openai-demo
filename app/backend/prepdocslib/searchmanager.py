@@ -36,6 +36,7 @@ from .embeddings import AzureOpenAIEmbeddingService, OpenAIEmbeddings
 from .listfilestrategy import File
 from .strategy import SearchInfo
 from .textsplitter import SplitPage
+from .customizations.fieldcustomizer import FieldCustomizer, append_fields
 
 logger = logging.getLogger("scripts")
 
@@ -277,7 +278,9 @@ class SearchManager:
                         vectorizers=vectorizers,
                     ),
                 )
-
+                # Add custom fields to the index based on project needs
+                # See "customizations" folder for more information
+                FieldCustomizer.append_fields(fields)
                 await search_index_client.create_index(index)
             else:
                 logger.info("Search index %s already exists", self.search_info.index_name)
