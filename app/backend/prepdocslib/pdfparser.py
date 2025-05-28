@@ -181,7 +181,9 @@ class DocumentAnalysisParser(Parser):
                 if page.page_number == 1 and not planid:
                     # If this is the first page, we assume it has a planid
                     # This is a hack to support the Medica use case
-                    metadata = MedicaDocClassifier.classify(page_text)
+                    logger.info("Classifying first page for planid extraction")
+                    logger.info("Page text: %s", page_text[:1000])  # Log first 1000 chars for debugging
+                    metadata = MedicaDocClassifier.classify(text = page_text)
                     planid = metadata.get("planid", None)  ## Hank
 
                     
