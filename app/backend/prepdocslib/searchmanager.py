@@ -36,7 +36,7 @@ from .embeddings import AzureOpenAIEmbeddingService, OpenAIEmbeddings
 from .listfilestrategy import File
 from .strategy import SearchInfo
 from .textsplitter import SplitPage
-from .customizations.fieldcustomizer import FieldCustomizer, append_fields
+from .customizations.medica import FieldCustomizer, append_fields
 
 logger = logging.getLogger("scripts")
 
