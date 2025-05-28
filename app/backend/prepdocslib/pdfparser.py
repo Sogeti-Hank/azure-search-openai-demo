@@ -187,7 +187,8 @@ class DocumentAnalysisParser(Parser):
 
                     metadata = await classifier.classify(text = page_text)
                     planid = metadata.get("planid", None)  ## Hank
-
+                    logger.info("Extracted planid in pdfparser: %s", planid)
+                
                     
                 yield Page(page_num=page.page_number - 1, offset=offset, text=page_text, planid=planid)
                 offset += len(page_text)

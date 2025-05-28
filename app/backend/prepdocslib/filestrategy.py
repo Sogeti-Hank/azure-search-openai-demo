@@ -27,12 +27,12 @@ async def parse_file(
         return []
     logger.info("Ingesting '%s'", file.filename())
     pages = [page async for page in processor.parser.parse(content=file.content)]
-    
+    planid = file.planid if hasattr(file, "planid") else "xxx"  ## Hank
     logger.info("Splitting '%s' into sections", file.filename())
     if image_embeddings:
         logger.warning("Each page will be split into smaller chunks of text, but images will be of the entire page.")
     sections = [
-        Section(split_page, content=file, category=category) for split_page in processor.splitter.split_pages(pages)
+        Section(split_page, content=file, category=category, planid = planid) for split_page in processor.splitter.split_pages(pages)
     ]
     return sections
 
