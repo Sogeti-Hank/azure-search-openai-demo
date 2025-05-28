@@ -51,6 +51,7 @@ class Section:
         self.content = content
         self.category = category
         self.planid = content.acls.get("planid", None)  ## Hank
+        logger.info("planid in section= %s", self.planid)
         
 
 
