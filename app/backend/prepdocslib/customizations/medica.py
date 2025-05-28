@@ -53,7 +53,7 @@ class MedicaDocClassifier:
             logger.info(f"Token: {token}")
             self.llm_client =  AsyncAzureOpenAI(
                 api_version= os.getenv("AZURE_OPENAI_API_VERSION") or "2024-06-01",
-                azure_endpoint= "https://cog-zvuhhhpiitc46.openai.azure.com/",  ## endpoint,  -Hank
+                azure_endpoint= "https://cog-zvuhhhpiitc46.openai.azure.com/",  ## endpoint,  -Hank  https://cog-zvuhhhpiitc46.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2025-01-01-preview
                 azure_ad_token_provider=token_provider,
             )
         prompt = (
