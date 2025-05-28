@@ -71,6 +71,7 @@ class MedicaDocClassifier:
                """
             f"Document:\n{text[:2000]}"  # Limit to first 2000 chars for prompt size
         )
+        logger.info(f"Prompt for LLM: {prompt}")
         response = await self.llm_client.chat.completions.create(
             model="gpt-4",  # or your deployment/model name
             messages=[{"role": "user", "content": prompt}],
@@ -80,7 +81,9 @@ class MedicaDocClassifier:
         # Parse the LLM's response as JSON
         import json
         try:
+            logger.info(f"LLM response: {response.choices[0].message.content}")
             result = json.loads(response.choices[0].message.content)
+            logger.info(f"LLM response: {result}")
         except Exception:
             result = {"doctype": None, "planid": None, "locale": None}
         return result
