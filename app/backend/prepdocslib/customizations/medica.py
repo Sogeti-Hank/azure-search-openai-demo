@@ -7,6 +7,9 @@ from azure.identity.aio import (
 from typing import Any, Dict, Union
 from openai import AsyncAzureOpenAI
 
+import logging
+logger = logging.getLogger("scripts")
+
 
 class FieldCustomizer:
     """
@@ -41,6 +44,8 @@ class MedicaDocClassifier:
 
         azure_credential: Union[AzureDeveloperCliCredential, ManagedIdentityCredential]
         if not self.llm_client:
+            logger.info("No LLM client provided, initializing Azure OpenAI client.")
+            azure_credential = AzureDeveloperCliCredential()  # or ManagedIdentityCredential()
             token_provider = get_bearer_token_provider(azure_credential, "https://cognitiveservices.azure.com/.default")
             llm_client = AsyncAzureOpenAI(
                 api_version=AZURE_OPENAI_API_VERSION,

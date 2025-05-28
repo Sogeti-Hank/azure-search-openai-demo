@@ -183,7 +183,9 @@ class DocumentAnalysisParser(Parser):
                     # This is a hack to support the Medica use case
                     logger.info("Classifying first page for planid extraction")
                     logger.info("Page text: %s", page_text[:1000])  # Log first 1000 chars for debugging
-                    metadata = MedicaDocClassifier.classify(text = page_text)
+                    classifier = MedicaDocClassifier(None)  # llm_client must be created/configured elsewhere
+
+                    metadata = classifier.classify(text = page_text)
                     planid = metadata.get("planid", None)  ## Hank
 
                     
