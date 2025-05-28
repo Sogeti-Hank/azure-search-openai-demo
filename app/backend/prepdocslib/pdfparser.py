@@ -109,7 +109,7 @@ class DocumentAnalysisParser(Parser):
             analyze_result: AnalyzeResult = await poller.result()
 
             offset = 0
-            planid = analyze_result.metadata.set("planid", "HTL")  ## Hank
+            planid = "HTL"  ## Hank"
             for page in analyze_result.pages:
                 tables_on_page = [
                     table
