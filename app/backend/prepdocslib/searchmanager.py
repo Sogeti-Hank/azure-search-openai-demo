@@ -442,7 +442,7 @@ class SearchManager:
                         ),
                         "sourcefile": section.content.filename(),
                         **section.content.acls,
-                        "planid": section.planid,  ## Hank
+                        "planid": "XYZ", ##section.planid,  ## Hank
                     }
                     for section_index, section in enumerate(batch)
                 ]
