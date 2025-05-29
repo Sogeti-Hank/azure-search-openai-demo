@@ -49,6 +49,7 @@ export interface SettingsProps {
     showSuggestFollowupQuestions?: boolean;
     showAgenticRetrievalOption: boolean;
     useAgenticRetrieval: boolean;
+    planId: string;
 }
 
 export const Settings = ({
@@ -89,7 +90,8 @@ export const Settings = ({
     promptTemplateSuffix,
     showSuggestFollowupQuestions,
     showAgenticRetrievalOption,
-    useAgenticRetrieval
+    useAgenticRetrieval,
+    planId
 }: SettingsProps) => {
     const { t } = useTranslation();
 
@@ -129,6 +131,8 @@ export const Settings = ({
     const shouldStreamFieldId = useId("shouldStreamField");
     const suggestFollowupQuestionsId = useId("suggestFollowupQuestions");
     const suggestFollowupQuestionsFieldId = useId("suggestFollowupQuestionsField");
+    const planIdId = useId("planId"); // Hank -planid
+    const planIdFieldId = useId("planIdField"); // Hank -planid
 
     const renderLabel = (props: RenderLabelType | undefined, labelId: string, fieldId: string, helpText: string) => (
         <HelpCallout labelId={labelId} fieldId={fieldId} helpText={helpText} label={props?.label} />
@@ -136,6 +140,18 @@ export const Settings = ({
 
     return (
         <div className={className}>
+            <TextField
+                id={planIdFieldId}
+                className={styles.settingsSeparator}
+                defaultValue={planId}
+                label={t("labels.promptTemplate")}
+                multiline
+                autoAdjustHeight
+                onChange={(_ev, val) => onChange("planId", val || "")}
+                aria-labelledby={planIdId}
+                onRenderLabel={props => renderLabel(props, planIdId, planIdFieldId, t("helpTexts.planId"))}
+            />
+            
             <TextField
                 id={promptTemplateFieldId}
                 className={styles.settingsSeparator}

@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { Helmet } from "react-helmet-async";
-import { Panel, DefaultButton } from "@fluentui/react";
+import { Panel, DefaultButton, PlainCard } from "@fluentui/react";
 import readNDJSONStream from "ndjson-readablestream";
 
 import appLogo from "../../assets/applogo.svg";
@@ -36,6 +36,7 @@ import { TokenClaimsDisplay } from "../../components/TokenClaimsDisplay";
 import { LoginContext } from "../../loginContext";
 import { LanguagePicker } from "../../i18n/LanguagePicker";
 import { Settings } from "../../components/Settings/Settings";
+import { PlantGrassFilled } from "@fluentui/react-icons";
 
 const Chat = () => {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -63,6 +64,7 @@ const Chat = () => {
     const [useGroupsSecurityFilter, setUseGroupsSecurityFilter] = useState<boolean>(false);
     const [gpt4vInput, setGPT4VInput] = useState<GPT4VInput>(GPT4VInput.TextAndImages);
     const [useGPT4V, setUseGPT4V] = useState<boolean>(false);
+    const [planId, setPlanId] = useState<string>(""); // Hank -planid
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
@@ -237,6 +239,7 @@ const Chat = () => {
                         gpt4v_input: gpt4vInput,
                         language: i18n.language,
                         use_agentic_retrieval: useAgenticRetrieval,
+                        plan_id: planId.length === 0 ? undefined : planId, // Hank
                         ...(seed !== null ? { seed: seed } : {})
                     }
                 },
@@ -362,6 +365,9 @@ const Chat = () => {
                 break;
             case "retrievalMode":
                 setRetrievalMode(value);
+                break;
+            case "planId":
+                setPlanId(value); // Hank -planid
                 break;
             case "useAgenticRetrieval":
                 setUseAgenticRetrieval(value);

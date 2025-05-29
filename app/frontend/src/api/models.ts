@@ -42,6 +42,7 @@ export type ChatAppRequestOverrides = {
     vector_fields: VectorFields;
     language: string;
     use_agentic_retrieval: boolean;
+    plan_id?: string; // Hank
 };
 
 export type ResponseMessage = {

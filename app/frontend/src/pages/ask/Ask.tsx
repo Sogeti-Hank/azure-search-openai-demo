@@ -242,6 +242,7 @@ export function Component(): JSX.Element {
                 break;
             case "useAgenticRetrieval":
                 setUseAgenticRetrieval(value);
+            
         }
     };
 

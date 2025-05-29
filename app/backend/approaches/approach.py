@@ -175,6 +175,7 @@ class Approach(ABC):
     def build_filter(self, overrides: dict[str, Any], auth_claims: dict[str, Any]) -> Optional[str]:
         include_category = overrides.get("include_category")
         exclude_category = overrides.get("exclude_category")
+        plan_id = overrides.get("planid")
         security_filter = self.auth_helper.build_security_filters(overrides, auth_claims)
         filters = []
         if include_category:
@@ -183,8 +184,9 @@ class Approach(ABC):
             filters.append("category ne '{}'".format(exclude_category.replace("'", "''")))
         if security_filter:
             filters.append(security_filter)
-
-        filters.append("planid eq '2025-IFBAPSCPCMN87'")    ## Hank  Hardcoded as a test for now
+        if plan_id:
+            filters.append("planid eq '{}'".format(plan_id.replace("'", "''"))) ## Hank -planid  Hardcoded as a test for now
+          
         return None if len(filters) == 0 else " and ".join(filters)
 
     async def search(
