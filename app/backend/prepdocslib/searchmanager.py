@@ -446,7 +446,10 @@ class SearchManager:
                         ),
                         "sourcefile": section.content.filename(),
                         **section.content.acls,
-                        "planid": section.planid,  ## Hank
+                        ## Medica enhancements
+                        "planid": section.planid,
+                        "doctype": section.doctype,
+                        "locale": section.locale,
                     }
                     for section_index, section in enumerate(batch)
                 ]
