@@ -46,11 +46,11 @@ class MedicaDocClassifier:
         azure_credential: Union[AzureDeveloperCliCredential, ManagedIdentityCredential]
         if not self.llm_client:
             logger.info("No LLM client provided, initializing Azure OpenAI client.")
-            logger.info("AZURE_OPENAI_API_VERSION = " + os.getenv("AZURE_OPENAI_API_VERSION"))
+            logger.info("AZURE_OPENAI_API_VERSION = " + os.getenv("AZURE_OPENAI_API_VERSION"))  ## Hank
             azure_credential = AzureDeveloperCliCredential()  # or ManagedIdentityCredential()
             token_provider = get_bearer_token_provider(azure_credential, "https://cognitiveservices.azure.com/.default")
             token = await token_provider()
-            logger.info(f"Token: {token}")
+            
             self.llm_client =  AsyncAzureOpenAI(
                 api_version= os.getenv("AZURE_OPENAI_API_VERSION") or "2024-06-01",
                 azure_endpoint= "https://cog-zvuhhhpiitc46.openai.azure.com/",  ## endpoint,  -Hank  https://cog-zvuhhhpiitc46.openai.azure.com/openai/deployments/gpt-4/chat/completions?api-version=2025-01-01-preview
@@ -71,7 +71,7 @@ class MedicaDocClassifier:
                """
             f"Document:\n{text[:2000]}"  # Limit to first 2000 chars for prompt size
         )
-        logger.info(f"Prompt for LLM: {prompt}")
+        logger.info(f"Prompt for LLM: {prompt}") ## Hank
         response = await self.llm_client.chat.completions.create(
             model="gpt-4",  # or your deployment/model name
             messages=[{"role": "user", "content": prompt}],
@@ -81,9 +81,9 @@ class MedicaDocClassifier:
         # Parse the LLM's response as JSON
         import json
         try:
-            logger.info(f"LLM response: {response.choices[0].message.content}")
+            logger.info(f"LLM response: {response.choices[0].message.content}") ## Hank
             result = json.loads(response.choices[0].message.content)
-            logger.info(f"LLM response: {result}")
+            logger.info(f"LLM response: {result}") ## Hank
         except Exception:
             result = {"doctype": None, "planid": None, "locale": None}
         return result
