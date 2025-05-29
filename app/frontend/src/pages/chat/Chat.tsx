@@ -579,6 +579,7 @@ const Chat = () => {
                         showSuggestFollowupQuestions={true}
                         showAgenticRetrievalOption={showAgenticRetrievalOption}
                         useAgenticRetrieval={useAgenticRetrieval}
+                        planId={planId}
                         onChange={handleSettingsChange}
                     />
                     {useLogin && <TokenClaimsDisplay />}
