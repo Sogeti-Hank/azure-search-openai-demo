@@ -192,7 +192,7 @@ class DocumentAnalysisParser(Parser):
                     logger.info("Extracted planid in pdfparser: %s", planid)
                 
                     
-                yield Page(page_num=page.page_number - 1, offset=offset, text=page_text, planid=planid)
+                yield Page(page_num=page.page_number - 1, offset=offset, text=page_text, planid=planid, doctype=doctype, locale=locale)
                 offset += len(page_text)
 
     @staticmethod

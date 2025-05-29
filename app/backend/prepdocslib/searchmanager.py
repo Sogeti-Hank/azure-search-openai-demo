@@ -51,8 +51,8 @@ class Section:
         self.content = content
         self.category = category
         self.planid = planid  ## Hank
-        self.doctype = doctype if doctype else ""  
-        self.locale = locale if locale else ""  
+        self.doctype = doctype   
+        self.locale = locale  
         logger.info("planid in section= %s", self.planid)
         
 
