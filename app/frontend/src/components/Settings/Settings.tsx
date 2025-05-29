@@ -144,7 +144,7 @@ export const Settings = ({
                 id={planIdFieldId}
                 className={styles.settingsSeparator}
                 defaultValue={planId}
-                label={t("labels.promptTemplate")}
+                label={t("labels.planId")}
                 multiline
                 autoAdjustHeight
                 onChange={(_ev, val) => onChange("planId", val || "")}

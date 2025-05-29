@@ -71,7 +71,7 @@ class MedicaDocClassifier:
                """
             f"Document:\n{text[:2000]}"  # Limit to first 2000 chars for prompt size
         )
-        logger.info(f"Prompt for LLM: {prompt}") ## Hank
+        ### logger.info(f"Prompt for LLM: {prompt}") ## Hank
         response = await self.llm_client.chat.completions.create(
             model="gpt-4",  # or your deployment/model name
             messages=[{"role": "user", "content": prompt}],

@@ -80,6 +80,7 @@
         "promptTemplate": "Override prompt template",
         "temperature": "Temperature",
         "seed": "Seed",
+        "planId": "Plan ID",
         "minimumSearchScore": "Minimum search score",
         "minimumRerankerScore": "Minimum reranker score",
         "retrieveCount": "Retrieve this many search results:",
@@ -174,6 +175,7 @@
         "streamChat": "Continuously streams the response to the chat UI as it is generated.",
         "useOidSecurityFilter": "Filter search results based on the authenticated user's OID.",
         "useGroupsSecurityFilter": "Filter search results based on the authenticated user's groups.",
-        "useAgenticRetrieval": "Use agentic retrieval from Azure AI Search for multi-query planning. Always uses semantic ranker."
+        "useAgenticRetrieval": "Use agentic retrieval from Azure AI Search for multi-query planning. Always uses semantic ranker.",
+        "planId": "Copy and paste a plan ID here to use an existing agentic retrieval query plan. If left empty, the default plan will be used."
     }
 }
