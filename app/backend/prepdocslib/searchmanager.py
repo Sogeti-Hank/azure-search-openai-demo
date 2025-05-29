@@ -53,7 +53,7 @@ class Section:
         self.planid = planid  ## Hank
         self.doctype = doctype   
         self.locale = locale  
-        logger.info("planid in section= %s", self.planid)
+        
         
 
 

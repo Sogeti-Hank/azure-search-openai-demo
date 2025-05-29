@@ -34,7 +34,7 @@ async def parse_file(
     if image_embeddings:
         logger.warning("Each page will be split into smaller chunks of text, but images will be of the entire page.")
     sections = [
-        Section(split_page, content=file, category=category, planid = planid) for split_page in processor.splitter.split_pages(pages)
+        Section(split_page, content=file, category=category, planid = planid, doctype = doctype, locale=locale) for split_page in processor.splitter.split_pages(pages)
     ]
     return sections
 
