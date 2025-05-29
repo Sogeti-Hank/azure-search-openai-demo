@@ -36,6 +36,7 @@ from .embeddings import AzureOpenAIEmbeddingService, OpenAIEmbeddings
 from .listfilestrategy import File
 from .strategy import SearchInfo
 from .textsplitter import SplitPage
+from .customizations.medica import FieldCustomizer, append_fields
 
 logger = logging.getLogger("scripts")
 
@@ -45,10 +46,17 @@ class Section:
     A section of a page that is stored in a search service. These sections are used as context by Azure OpenAI service
     """
 
-    def __init__(self, split_page: SplitPage, content: File, category: Optional[str] = None):
+    def __init__(self, split_page: SplitPage, content: File, planid: Optional[str] = None, doctype: Optional[str] = None, locale: Optional[str] = None, category: Optional[str] = None):
         self.split_page = split_page
         self.content = content
         self.category = category
+        self.planid = planid  ## Hank
+        self.doctype = doctype   
+        self.locale = locale  
+        
+        
+
+
 
 
 class SearchManager:
@@ -277,7 +285,9 @@ class SearchManager:
                         vectorizers=vectorizers,
                     ),
                 )
-
+                # Add custom fields to the index based on project needs
+                # See "customizations" folder for more information
+                append_fields(fields)
                 await search_index_client.create_index(index)
             else:
                 logger.info("Search index %s already exists", self.search_info.index_name)
@@ -436,6 +446,10 @@ class SearchManager:
                         ),
                         "sourcefile": section.content.filename(),
                         **section.content.acls,
+                        ## Medica enhancements
+                        "planid": section.planid,
+                        "doctype": section.doctype,
+                        "locale": section.locale,
                     }
                     for section_index, section in enumerate(batch)
                 ]

@@ -8,10 +8,13 @@ class Page:
         text (str): The text of the page
     """
 
-    def __init__(self, page_num: int, offset: int, text: str):
+    def __init__(self, page_num: int, offset: int, text: str, planid: str = None, doctype: str = None, locale: str = None):
         self.page_num = page_num
         self.offset = offset
         self.text = text
+        self.planid = planid  ## Hank
+        self.doctype = doctype
+        self.locale = locale
 
 
 class SplitPage:

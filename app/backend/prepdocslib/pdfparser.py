@@ -4,6 +4,7 @@ import logging
 from collections.abc import AsyncGenerator
 from enum import Enum
 from typing import IO, Union
+from .customizations.medica import MedicaDocClassifier
 
 import pymupdf
 from azure.ai.documentintelligence.aio import DocumentIntelligenceClient
@@ -109,6 +110,7 @@ class DocumentAnalysisParser(Parser):
             analyze_result: AnalyzeResult = await poller.result()
 
             offset = 0
+            planid = None  ## Hank"
             for page in analyze_result.pages:
                 tables_on_page = [
                     table
@@ -176,7 +178,21 @@ class DocumentAnalysisParser(Parser):
                 page_text = page_text.replace("<!-- PageBreak -->", "")
                 # We remove excess newlines at the beginning and end of the page
                 page_text = page_text.strip()
-                yield Page(page_num=page.page_number - 1, offset=offset, text=page_text)
+                if page.page_number == 1 and not planid:
+                    # If this is the first page, we assume it has a planid
+                    # This is a hack to support the Medica use case
+                    logger.info("Classifying first page for planid extraction")
+                    logger.info("Page text: %s", page_text[:1000])  # Log first 1000 chars for debugging
+                    classifier = MedicaDocClassifier(None)  # llm_client must be created/configured elsewhere
+
+                    metadata = await classifier.classify(text = page_text)
+                    planid = metadata.get("planid", None)  ## Hank
+                    doctype = metadata.get("doctype", None)
+                    locale = metadata.get("locale", None)
+                    logger.info("Extracted planid in pdfparser: %s", planid)
+                
+                    
+                yield Page(page_num=page.page_number - 1, offset=offset, text=page_text, planid=planid, doctype=doctype, locale=locale)
                 offset += len(page_text)
 
     @staticmethod
