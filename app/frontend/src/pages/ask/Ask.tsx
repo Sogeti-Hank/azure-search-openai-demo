@@ -58,6 +58,7 @@ export function Component(): JSX.Element {
     const [isPlaying, setIsPlaying] = useState(false);
     const [showAgenticRetrievalOption, setShowAgenticRetrievalOption] = useState<boolean>(false);
     const [useAgenticRetrieval, setUseAgenticRetrieval] = useState<boolean>(false);
+    const [planId, setPlanId] = useState<string>("");  // Hank -planid
 
     const lastQuestionRef = useRef<string>("");
 
@@ -382,6 +383,7 @@ export function Component(): JSX.Element {
                     requireAccessControl={requireAccessControl}
                     showAgenticRetrievalOption={showAgenticRetrievalOption}
                     useAgenticRetrieval={useAgenticRetrieval}
+                    planId={planId} // Hank -planid
                     onChange={handleSettingsChange}
                 />
                 {useLogin && <TokenClaimsDisplay />}
