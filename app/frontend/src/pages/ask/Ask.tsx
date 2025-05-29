@@ -239,9 +239,9 @@ export function Component(): JSX.Element {
             case "vectorFields":
                 setVectorFields(value);
                 break;
-            case "retrievalMode":
-                setRetrievalMode(value);
-                break;
+            case "planId":
+                setPlanId(value);
+                break;           
             case "useAgenticRetrieval":
                 setUseAgenticRetrieval(value);
             
