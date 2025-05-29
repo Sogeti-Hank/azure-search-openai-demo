@@ -46,11 +46,13 @@ class Section:
     A section of a page that is stored in a search service. These sections are used as context by Azure OpenAI service
     """
 
-    def __init__(self, split_page: SplitPage, content: File, planid: Optional[str] = None, category: Optional[str] = None):
+    def __init__(self, split_page: SplitPage, content: File, planid: Optional[str] = None, doctype: Optional[str] = None, locale: Optional[str] = None, category: Optional[str] = None):
         self.split_page = split_page
         self.content = content
         self.category = category
         self.planid = planid  ## Hank
+        self.doctype = doctype if doctype else ""  
+        self.locale = locale if locale else ""  
         logger.info("planid in section= %s", self.planid)
         
 

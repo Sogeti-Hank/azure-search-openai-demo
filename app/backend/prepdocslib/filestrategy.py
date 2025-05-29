@@ -28,6 +28,8 @@ async def parse_file(
     logger.info("Ingesting '%s'", file.filename())
     pages = [page async for page in processor.parser.parse(content=file.content)]
     planid = pages[0].planid
+    doctype = pages[0].doctype ## -Hank if hasattr(pages[0], 'doctype') else None
+    locale = pages[0].locale if hasattr(pages[0], 'locale') else None
     logger.info("Splitting '%s' into sections", file.filename())
     if image_embeddings:
         logger.warning("Each page will be split into smaller chunks of text, but images will be of the entire page.")

@@ -187,6 +187,8 @@ class DocumentAnalysisParser(Parser):
 
                     metadata = await classifier.classify(text = page_text)
                     planid = metadata.get("planid", None)  ## Hank
+                    doctype = metadata.get("doctype", None)
+                    locale = metadata.get("locale", None)
                     logger.info("Extracted planid in pdfparser: %s", planid)
                 
                     
