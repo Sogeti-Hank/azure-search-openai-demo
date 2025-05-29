@@ -17,8 +17,8 @@ class ChatUser(HttpUser):
         first_question = random.choice(
             [
                 "What is included in my Northwind Health Plus plan that is not in standard?",
-                "What does a Product Manager do?",
-                "What happens in a performance review?",
+                "I have policy 2025-IFBAPSCPCMN73, and was just diagnosed with breast cancer, what are my coverages?",
+                "Show me the difference in cleft palate coinsurance between policy 2025-IFBAPSCPCMN73 and 2025-IFBAPSCPCMN87",
                 "Whats your whistleblower policy?",
             ]
         )
