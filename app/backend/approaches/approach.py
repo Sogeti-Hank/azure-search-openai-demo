@@ -183,6 +183,8 @@ class Approach(ABC):
             filters.append("category ne '{}'".format(exclude_category.replace("'", "''")))
         if security_filter:
             filters.append(security_filter)
+
+        filters.append("planid eq ''2025-IFBAPSCPCMN87''")    ## Hank  Hardcoded as a test for now
         return None if len(filters) == 0 else " and ".join(filters)
 
     async def search(
