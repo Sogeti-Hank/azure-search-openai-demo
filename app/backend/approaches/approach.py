@@ -181,7 +181,7 @@ class Approach(ABC):
         if include_category:
             filters.append("category eq '{}'".format(include_category.replace("'", "''")))
         if exclude_category:
-            filters.append("category ne '{}'".format(exclude_category.replace("'", "''")))
+            filters.append("planid eq '{}'".format(exclude_category.replace("'", "''")))  ## Hank   HACK HACK  category ne
         if security_filter:
             filters.append(security_filter)
         if plan_id:
